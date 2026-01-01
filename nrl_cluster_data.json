@@ -5,7 +5,7 @@
                 "id": 0,
                 "name": "Ball Running Fullback",
                 "count": 5,
-                "description": "Elite ball runners who are quick and are able to break the defensive line. Tend to struggle with ball playing however."
+                "description": "Fullbacks who are quick and are able to break the defensive line. Tend to struggle with ball playing however."
             },
             {
                 "id": 1,
@@ -156,19 +156,19 @@
             {
                 "id": 0,
                 "name": "Dominant Half",
-                "count": 11,
-                "description": "These players control the football, and are usually relied upon to set up tries and do most of the kicking."
+                "count": 10,
+                "description": "These players control the attack, and are usually relied upon to set up tries and do most of the kicking."
             },
             {
                 "id": 1,
                 "name": "Running Half",
-                "count": 21,
+                "count": 19,
                 "description": "Halves with strong running games who look to break the line, usually Five-Eighths."
             },
             {
                 "id": 2,
                 "name": "Organising Half",
-                "count": 17,
+                "count": 20,
                 "description": "Less dominant halves who may rely on their halves partner to control the attack, focusing on organising their edge."
             }
         ],
@@ -178,7 +178,6 @@
                 "features": [
                     "tries_per_80",
                     "all_run_metres_per_80",
-                    "post_contact_metres_per_80",
                     "line_breaks_per_80",
                     "tackle_breaks_per_80"
                 ]
