@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NRL Player Archetypes</title>
+    <style>
+        :root {
+            --navy: #0A1128;
+            --lime: #C9FF00;
+            --white: #FFFFFF;
+            --gray: #1E2742;
+            --card-bg: #151E3F;
+            --border-color: #2A3B6E;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--navy);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--navy);
+            border-bottom: 2px solid var(--lime);
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        h1 span {
+            color: var(--lime);
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Navigation Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--white);
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            border-radius: 4px;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--lime);
+            color: var(--lime);
+        }
+
+        .tab-btn.active {
+            background-color: var(--lime);
+            color: var(--navy);
+            border-color: var(--lime);
+            font-weight: 800;
+        }
+
+        /* Main Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            height: calc(100vh - 250px);
+            min-height: 600px;
+        }
+
+        /* Plot Container */
+        .plot-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Sidebar / Archetype Cards */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .archetype-card {
+            background-color: var(--card-bg);
+            border-left: 4px solid var(--lime);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            transition: transform 0.2s ease;
+        }
+
+        .archetype-card:hover {
+            transform: translateX(5px);
+        }
+
+        .archetype-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .archetype-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--lime);
+            margin-bottom: 0.25rem;
+        }
+
+        .player-count {
+            font-size: 0.85rem;
+            color: #8A9bb8;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .description {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #d0d0d0;
+            margin-bottom: 1rem;
+        }
+
+        .features-list {
+            list-style: none;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #a0a0a0;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-item::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background-color: var(--lime);
+            border-radius: 50%;
+        }
+
+        /* ML Explanation Dropdown */
+        .ml-explanation {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .ml-header {
+            padding: 1rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .ml-header:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .ml-title {
+            font-weight: 700;
+            color: var(--lime);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ml-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .ml-explanation.active .ml-icon {
+            transform: rotate(180deg);
+        }
+
+        .ml-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+            padding: 0 1.5rem;
+        }
+
+        .ml-explanation.active .ml-content {
+            max-height: 500px;
+            /* Approximate max height */
+            padding-bottom: 1.5rem;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .ml-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .ml-section h3 {
+            color: var(--white);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .ml-section p {
+            color: #d0d0d0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: var(--lime);
+            font-size: 1.2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .plot-container {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>NRL <span>ARCHETYPES</span></h1>
+        <div style="color: var(--lime); font-weight: 600;">2025 SEASON</div>
+    </header>
+
+    <div class="container">
+
+        <!-- ML Explanation Dropdown -->
+        <div class="ml-explanation" id="mlDropdown">
+            <div class="ml-header" onclick="toggleMLDropdown()">
+                <div class="ml-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    How Archetypes Are Built Using Machine Learning
+                </div>
+                <div class="ml-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+            </div>
+            <div class="ml-content">
+                <div class="ml-grid">
+                    <div class="ml-section">
+                        <h3>1. Grouping Players (K-Means Clustering)</h3>
+                        <p>
+                            An unsupervised machine learning algorithm called <strong>K-Means Clustering</strong>
+                            is used to find natural groupings of players.
+                            Imagine plotting every player in each postion on a graph based on stats relevant to their
+                            position. K-Means automatically
+                            identifies the "centers" of dense groups, with the objective being to minimise the distance
+                            between datapoints in that group
+                            and the centre using an iterative process. This reveals distinct styles of play (e.g., "Ball
+                            Playing Middle" vs. "Impact Middle") without
+                            human bias.
+                        </p>
+                    </div>
+                    <div class="ml-section">
+                        <h3>2. Defining Dimensions (Principal Component Analysis)</h3>
+                        <p>
+                            Since we can't plot all stats against eachother, we can use <strong>PCA (Principal Component
+                                Analysis)</strong>
+                            to simplify dozens of stats into 3 key dimensions. For each position, 3 key qualities are
+                            chosen, with each quality
+                            being a PC1 representation of the stats that make up that quality: basically combining the
+                            stats into one.
+                            For example, we might combine "Try Assists", "Line Break Assists", and "Forced Drop Outs"
+                            into a single "Creativity" score. This allows us to visualize and compare players in a
+                            simple 3D space.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs" id="positionTabs">
+            <!-- Tabs generated by JS -->
+        </div>
+
+        <div class="content-grid">
+            <div class="plot-container" id="plotContainer">
+                <div class="loading">Select a position to view archetypes</div>
+            </div>
+
+            <div class="sidebar" id="archetypeList">
+                <!-- Archetype cards generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="nrl_cluster_data.js"></script>
+    <script>
+
+        // DOM Elements
+        const tabsContainer = document.getElementById('positionTabs');
+        const plotContainer = document.getElementById('plotContainer');
+        const archetypeList = document.getElementById('archetypeList');
+
+        // State
+        let currentPosition = null;
+
+        // Initialize
+        function init() {
+            const positions = Object.keys(clusterData);
+
+            // Create Tabs
+            positions.forEach(pos => {
+                const btn = document.createElement('button');
+                btn.className = 'tab-btn';
+                btn.textContent = pos;
+                btn.onclick = () => selectPosition(pos);
+                tabsContainer.appendChild(btn);
+            });
+
+            // Select first position by default
+            if (positions.length > 0) {
+                selectPosition(positions[0]);
+            }
+        }
+
+        // Select Position
+        function selectPosition(position) {
+            if (currentPosition === position) return;
+            currentPosition = position;
+
+            // Update Tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === position);
+            });
+
+            // Update Plot
+            const plotFile = `nrl_cluster_plot_${position.toLowerCase().replace(' ', '_')}.html`;
+            plotContainer.innerHTML = `<iframe src="${plotFile}" title="${position} Clusters"></iframe>`;
+
+            // Update Archetypes
+            renderArchetypes(position);
+        }
+
+        // Render Archetype Cards
+        function renderArchetypes(position) {
+            const data = clusterData[position];
+            archetypeList.innerHTML = '';
+
+            // Add PC Axis Info Card (Optional context)
+            const contextCard = document.createElement('div');
+            contextCard.className = 'archetype-card';
+            contextCard.style.borderLeftColor = '#fff';
+
+            // Helper to format features list
+            const formatFeatures = (features) => features.map(f => f.replace(/_per_80/g, '').replace(/_/g, ' ')).join(', ');
+
+            contextCard.innerHTML = `
+                <div class="archetype-header">
+                    <div class="archetype-name" style="color: #fff">Analysis Dimensions</div>
+                </div>
+                <div class="description">
+                    Clusters are defined by 3 key dimensions:
+                    <ul class="features-list" style="margin-top: 0.5rem">
+                        <li class="feature-item">
+                            <div>
+                                <strong style="color: var(--lime)">1. ${data.pc_axes.pc1.name}</strong><br>
+                                <span style="font-size: 0.8em; color: #888">${formatFeatures(data.pc_axes.pc1.features)}</span>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div>
+                                <strong style="color: var(--lime)">2. ${data.pc_axes.pc2.name}</strong><br>
+                                <span style="font-size: 0.8em; color: #888">${formatFeatures(data.pc_axes.pc2.features)}</span>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div>
+                                <strong style="color: var(--lime)">3. ${data.pc_axes.pc3.name}</strong><br>
+                                <span style="font-size: 0.8em; color: #888">${formatFeatures(data.pc_axes.pc3.features)}</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            `;
+            archetypeList.appendChild(contextCard);
+
+            // Add Cards for each Archetype
+            data.archetypes.forEach(arch => {
+                const card = document.createElement('div');
+                card.className = 'archetype-card';
+
+                // Generate a dynamic description based on the name
+                const description = arch.description || generateDescription(arch.name, data.pc_axes);
+
+                card.innerHTML = `
+                    <div class="archetype-header">
+                        <div class="archetype-name">${arch.name}</div>
+                        <div class="player-count">${arch.count} Players</div>
+                    </div>
+                    <div class="description">${description}</div>
+                `;
+                archetypeList.appendChild(card);
+            });
+        }
+
+        function generateDescription(name, axes) {
+            // Simple logic to generate descriptions based on the archetype name
+            // In a real app, this could be more sophisticated using the loadings
+            if (name.includes('Workhorse')) {
+                return `Defined by high workrate and involvement. These players consistently top the charts in ${axes.pc3.name.toLowerCase()} metrics like ${axes.pc3.features[0].replace(/_/g, ' ')}.`;
+            } else if (name.includes('Strike') || name.includes('Finisher')) {
+                return `Specialists in ${axes.pc2.name.toLowerCase()}. They excel at converting opportunities into points, with high ${axes.pc2.features[0].replace(/_/g, ' ')}.`;
+            } else if (name.includes('Playmaking') || name.includes('Organising')) {
+                return `The creative hub of the team. High ratings in ${axes.pc1.name.toLowerCase()}, focusing on ${axes.pc1.features[0].replace(/_/g, ' ')} and distribution.`;
+            } else if (name.includes('Running') || name.includes('Dynamic')) {
+                return `Explosive ball runners who break the line. They dominate in ${axes.pc1.name.toLowerCase()} stats, particularly ${axes.pc1.features[0].replace(/_/g, ' ')}.`;
+            } else if (name.includes('Defensive')) {
+                return `Defensive pillars. Their game is built on ${axes.pc3.name.toLowerCase()}, with high tackle counts and efficiency.`;
+            } else {
+                return `A balanced archetype contributing across multiple areas, with a specific focus on ${axes.pc1.name.toLowerCase()}.`;
+            }
+        }
+
+        // Toggle ML Dropdown
+        function toggleMLDropdown() {
+            const dropdown = document.getElementById('mlDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Run
+        init();
+    </script>
+</body>
+
+</html>
