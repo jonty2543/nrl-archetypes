@@ -54,6 +54,35 @@
             color: var(--lime);
         }
 
+        /* Year Toggle */
+        .year-toggle {
+            display: flex;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .year-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--white);
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .year-btn:hover {
+            background-color: rgba(201, 255, 0, 0.1);
+        }
+
+        .year-btn.active {
+            background-color: var(--lime);
+            color: var(--navy);
+        }
+
         .container {
             flex: 1;
             display: flex;
@@ -305,7 +334,6 @@
 <body>
     <header>
         <h1>NRL <span>ARCHETYPES</span></h1>
-        <div style="color: var(--lime); font-weight: 600;">2025 SEASON</div>
     </header>
 
     <div class="container">
@@ -388,12 +416,20 @@
 
         // State
         let currentPosition = null;
+        let currentYear = 'All';
 
         // Initialize
         function init() {
-            const positions = Object.keys(clusterData);
+            // Check if clusterData exists and has the year structure
+            if (typeof clusterData === 'undefined' || !clusterData[currentYear]) {
+                console.error("Cluster data not loaded or invalid format");
+                return;
+            }
+
+            const positions = Object.keys(clusterData[currentYear]);
 
             // Create Tabs
+            tabsContainer.innerHTML = '';
             positions.forEach(pos => {
                 const btn = document.createElement('button');
                 btn.className = 'tab-btn';
@@ -419,7 +455,7 @@
             });
 
             // Update Plot
-            const plotFile = `nrl_cluster_plot_${position.toLowerCase().replace(' ', '_')}.html`;
+            const plotFile = `nrl_cluster_plot_${position.toLowerCase().replace(' ', '_')}_all.html`;
             plotContainer.innerHTML = `<iframe src="${plotFile}" title="${position} Clusters"></iframe>`;
 
             // Update Archetypes
@@ -428,7 +464,7 @@
 
         // Render Archetype Cards
         function renderArchetypes(position) {
-            const data = clusterData[position];
+            const data = clusterData[currentYear][position];
             archetypeList.innerHTML = '';
 
             // Add PC Axis Info Card (Optional context)
