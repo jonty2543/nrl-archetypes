@@ -638,6 +638,13 @@ def generate_outputs(training_agg, models, configs):
                     #plotly-wrapper .updatemenu-item-text {
                         font-size: 14px !important;
                     }
+                    /* Prevent flicker by hiding buttons until positioned */
+                    #plotly-wrapper .updatemenu-container {
+                        visibility: hidden;
+                    }
+                    #plotly-wrapper.ready .updatemenu-container {
+                        visibility: visible;
+                    }
                 }
             </style>
             <script>
@@ -694,14 +701,25 @@ def generate_outputs(training_agg, models, configs):
                         updatemenus: [{
                             ...gd.layout.updatemenus[0],
                             x: 0.5,
-                            y: 1.08,
+                            y: 1.12, /* Move higher to avoid modebar */
                             xanchor: 'center',
                             yanchor: 'bottom',
                             direction: 'right',
                             font: { size: 10 }
-                        }]
+                        }],
+                        modebar: {
+                            orientation: 'v',
+                            x: 1,
+                            y: 0.5,
+                            xanchor: 'right',
+                            yanchor: 'middle'
+                        }
                     };
-                    Plotly.relayout(gd, update);
+                    Plotly.relayout(gd, update).then(() => {
+                        document.getElementById('plotly-wrapper').classList.add('ready');
+                    });
+                } else {
+                    document.getElementById('plotly-wrapper').classList.add('ready');
                 }
             }
 
@@ -715,8 +733,8 @@ def generate_outputs(training_agg, models, configs):
                 observer.observe(target, { childList: true, subtree: true });
                 applyButtonStyles();
                 
-                // Initial mobile adjustment
-                setTimeout(adjustPlotlyForMobile, 500);
+                // Initial mobile adjustment - faster timeout
+                setTimeout(adjustPlotlyForMobile, 100);
             });
             
             window.addEventListener('resize', () => {
@@ -729,7 +747,11 @@ def generate_outputs(training_agg, models, configs):
             </script>
             """
             
-            html_content = fig.to_html(include_plotlyjs='cdn', full_html=True)
+            html_content = fig.to_html(
+                include_plotlyjs='cdn', 
+                full_html=True,
+                config={'responsive': True, 'scrollZoom': True}
+            )
             
             # Inject into head
             head_end = html_content.find('</head>')
