@@ -128,7 +128,7 @@ POSITION_CONFIGS = [
         labels=['Link Centre', 'Workhorse Centre', 'Support Centre', 'Strike Centre'],
         descriptions=[
             "These centres play more of a Five-Eighth role with a high pass to run ratio, often looking to set up their winger.",
-            "HAttacking weapons who are heavily involved in gaining metres aswell as breaking the line and scoring tries.",
+            "Attacking weapons who are heavily involved in gaining metres aswell as breaking the line and scoring tries.",
             "These players are less involved with ball in hand and may play other roles for the team.",
             "Centres who are heavily involved in try scoring, and may look to set up those around them rather than taking tough carries."
         ],
@@ -617,8 +617,9 @@ def generate_outputs(training_agg, models, configs):
             
             filename = f"nrl_cluster_plot_{export_name.lower().replace(' ', '_')}_{str(year).lower()}.html"
             
-            # Inject custom CSS and JS to fix Plotly button styling
+            # Inject custom CSS and JS to fix Plotly button styling and add mobile responsiveness
             custom_head = """
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             <style>
                 #plotly-wrapper .updatemenu-button rect.updatemenu-item-bg {
                     rx: 8px !important;
@@ -628,13 +629,30 @@ def generate_outputs(training_agg, models, configs):
                 #plotly-wrapper .updatemenu-item-text {
                     fill: #0A1128 !important;
                 }
+                
+                /* Mobile specific adjustments */
+                @media (max-width: 768px) {
+                    #plotly-wrapper .updatemenu-button rect.updatemenu-item-bg {
+                        height: 35px !important; /* Larger touch target */
+                    }
+                    #plotly-wrapper .updatemenu-item-text {
+                        font-size: 14px !important;
+                    }
+                }
             </style>
             <script>
             function applyButtonStyles() {
                 const rects = document.querySelectorAll('.updatemenu-item-bg');
+                const isMobile = window.innerWidth < 768;
+                
                 rects.forEach(rect => {
                     rect.setAttribute('rx', '8');
                     rect.setAttribute('ry', '8');
+                    
+                    if (isMobile) {
+                        rect.setAttribute('height', '35');
+                    }
+                    
                     const parentGroup = rect.closest('.updatemenu-button');
                     const text = parentGroup ? parentGroup.querySelector('.updatemenu-item-text') : null;
 
@@ -658,6 +676,35 @@ def generate_outputs(training_agg, models, configs):
                 });
             }
 
+            function adjustPlotlyForMobile() {
+                const gd = document.querySelector('.plotly-graph-div');
+                if (!gd) return;
+                
+                if (window.innerWidth < 768) {
+                    const update = {
+                        legend: {
+                            orientation: 'h',
+                            y: -0.15,
+                            x: 0.5,
+                            xanchor: 'center',
+                            yanchor: 'top',
+                            font: { size: 10 }
+                        },
+                        margin: { l: 5, r: 5, b: 100, t: 50 },
+                        updatemenus: [{
+                            ...gd.layout.updatemenus[0],
+                            x: 0.5,
+                            y: 1.08,
+                            xanchor: 'center',
+                            yanchor: 'bottom',
+                            direction: 'right',
+                            font: { size: 10 }
+                        }]
+                    };
+                    Plotly.relayout(gd, update);
+                }
+            }
+
             // Watch for changes to the plot
             const observer = new MutationObserver((mutations) => {
                 applyButtonStyles();
@@ -667,6 +714,14 @@ def generate_outputs(training_agg, models, configs):
                 const target = document.body;
                 observer.observe(target, { childList: true, subtree: true });
                 applyButtonStyles();
+                
+                // Initial mobile adjustment
+                setTimeout(adjustPlotlyForMobile, 500);
+            });
+            
+            window.addEventListener('resize', () => {
+                applyButtonStyles();
+                adjustPlotlyForMobile();
             });
             
             // Also run on a timer as a fallback

@@ -116,7 +116,7 @@ const clusterData = {
                     "id": 1,
                     "name": "Workhorse Centre",
                     "count": 43,
-                    "description": "HAttacking weapons who are heavily involved in gaining metres aswell as breaking the line and scoring tries."
+                    "description": "Attacking weapons who are heavily involved in gaining metres aswell as breaking the line and scoring tries."
                 },
                 {
                     "id": 2,
