@@ -503,34 +503,6 @@ def generate_outputs(training_agg, models, configs):
                         ))
                         legend_shown = True
 
-                # Add Centroids
-                centroids = model_data['centroids']
-                for i, arch in enumerate(archetypes):
-                    color = colors[i % len(colors)]
-                    # The centroid index matches the cluster ID, but we need to find which cluster ID maps to this label
-                    # Find cluster ID for this label
-                    cid = next((k for k, v in model_data['label_map'].items() if v == arch), None)
-                    if cid is not None:
-                        c_pos = centroids[cid]
-                        fig.add_trace(go.Scatter3d(
-                            x=[c_pos[0]],
-                            y=[c_pos[1]],
-                            z=[c_pos[2]],
-                            mode='markers',
-                            name=f"{arch} Centroid",
-                            marker=dict(
-                                size=8, 
-                                color=color, 
-                                symbol='diamond',
-                                line=dict(color='white', width=1)
-                            ),
-                            hovertext=f"Centroid: {arch}",
-                            hoverinfo='text',
-                            legendgroup=arch,
-                            showlegend=False, # Already shown by player traces
-                            customdata=np.array(["Centroid"]) # Special tag for filtering
-                        ))
-                
                 # Interactive Year Filter Buttons
                 buttons = []
                 # "All Years" button
@@ -544,9 +516,9 @@ def generate_outputs(training_agg, models, configs):
                     opacities = []
                     hoverinfos = []
                     for trace in fig.data:
-                        # Each trace has a single year or "Centroid" in its customdata
+                        # Each trace has a single year in its customdata
                         trace_tag = trace.customdata[0]
-                        if trace_tag == "Centroid" or int(trace_tag) == target_y:
+                        if int(trace_tag) == target_y:
                             opacities.append(0.8)
                             hoverinfos.append("text")
                         else:
@@ -713,12 +685,20 @@ def generate_outputs(training_agg, models, configs):
                             y: 0.5,
                             xanchor: 'right',
                             yanchor: 'middle'
-                        }
+                        },
+                        scene: { dragmode: 'orbit' }
                     };
                     Plotly.relayout(gd, update).then(() => {
+                        Plotly.restyle(gd, { 'marker.size': 6 });
+                        if (gd._context) {
+                            gd._context.scrollZoom = false;
+                        }
                         document.getElementById('plotly-wrapper').classList.add('ready');
                     });
                 } else {
+                    if (gd._context) {
+                        gd._context.scrollZoom = true;
+                    }
                     document.getElementById('plotly-wrapper').classList.add('ready');
                 }
             }
@@ -750,7 +730,7 @@ def generate_outputs(training_agg, models, configs):
             html_content = fig.to_html(
                 include_plotlyjs='cdn', 
                 full_html=True,
-                config={'responsive': True, 'scrollZoom': True}
+                config={'responsive': True, 'scrollZoom': True, 'displaylogo': False}
             )
             
             # Inject into head
