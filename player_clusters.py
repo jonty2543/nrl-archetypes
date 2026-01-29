@@ -550,7 +550,8 @@ def generate_outputs(training_agg, models, configs):
                     scene=dict(
                         xaxis=dict(title=config.pc_names[0], showspikes=False),
                         yaxis=dict(title=config.pc_names[1], showspikes=False),
-                        zaxis=dict(title=config.pc_names[2], showspikes=False)
+                        zaxis=dict(title=config.pc_names[2], showspikes=False),
+                        dragmode='turntable'
                     )
                 )
             else:
@@ -575,7 +576,8 @@ def generate_outputs(training_agg, models, configs):
                     scene=dict(
                         xaxis=dict(showspikes=False),
                         yaxis=dict(showspikes=False),
-                        zaxis=dict(showspikes=False)
+                        zaxis=dict(showspikes=False),
+                        dragmode='turntable'
                     )
                 )
 
@@ -685,20 +687,14 @@ def generate_outputs(training_agg, models, configs):
                             y: 0.5,
                             xanchor: 'right',
                             yanchor: 'middle'
-                        },
-                        scene: { dragmode: 'orbit' }
+                        }
                     };
                     Plotly.relayout(gd, update).then(() => {
+                        Plotly.relayout(gd, { 'scene.dragmode': 'turntable' });
                         Plotly.restyle(gd, { 'marker.size': 6 });
-                        if (gd._context) {
-                            gd._context.scrollZoom = false;
-                        }
                         document.getElementById('plotly-wrapper').classList.add('ready');
                     });
                 } else {
-                    if (gd._context) {
-                        gd._context.scrollZoom = true;
-                    }
                     document.getElementById('plotly-wrapper').classList.add('ready');
                 }
             }
