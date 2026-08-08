@@ -11,19 +11,26 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 import os
+from pathlib import Path
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 
 # --- Configuration ---
 
-SUPABASE_URL = "https://glrzwxpxkckxaogpkwmn.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdscnp3eHB4a2NreGFvZ3Brd21uIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjA3OTU3NiwiZXhwIjoyMDcxNjU1NTc2fQ.YOF9ryJbhBoKKHT0n4eZDMGrR9dczR8INHVs_By4vRU"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(f.SUPABASE_URL, f.SUPABASE_KEY)
 
-YEARS_TO_PROCESS = [2022, 2023, 2024, 2025]
+YEARS_TO_PROCESS = [2023, 2024, 2025, 2026]
+ARCHETYPE_TABLE = "player_archetypes"
+UPSERT_BATCH_SIZE = 500
+PLAYER_NAME_ALIASES = {
+    "Nicholas Hynes": "Nicho Hynes",
+}
+EDGE_STRIKE_MIN_ATTACKING_THREAT = 1.0
+EDGE_SUPPORT_MAX_DEFENSIVE_WORKRATE = -0.75
+MIDDLE_IMPACT_MIN_BALL_RUNNING = 1.0
 
 class PositionConfig:
-    def __init__(self, name, features1, features2, features3, pc_names, n_clusters, labels, descriptions, min_games=5, profiles=None):
+    def __init__(self, name, features1, features2, features3, pc_names, n_clusters, labels, descriptions, min_games=5, profiles=None, assign_to_profiles=False):
         self.name = name
         self.features1 = features1
         self.features2 = features2
@@ -34,6 +41,7 @@ class PositionConfig:
         self.descriptions = descriptions
         self.min_games = min_games
         self.profiles = profiles or {}
+        self.assign_to_profiles = assign_to_profiles
 
 # Define Profiles (Ideal Centroids)
 PROFILES_FULLBACK = {
@@ -51,10 +59,10 @@ PROFILES_WINGER = {
 }
 
 PROFILES_CENTRE = {
-    'Link Centre': [1.5, 0.0, 0.0],
-    'Strike Centre': [0.0, 1.5, 0.0],
+    'Link Centre': [1.5, 0.0, -0.75],
     'Workhorse Centre': [0.0, 0.0, 1.5],
-    'Support Centre': [-1.0, -1.0, -1.0]
+    'Support Centre': [-1.0, -1.0, -1.0],
+    'Strike Centre': [0.0, 1.5, 0.0],
 }
 
 PROFILES_HALF = {
@@ -83,12 +91,47 @@ PROFILES_MIDDLE = {
     'Standard Middle': [-0.5, -0.5, 1.0]
 }
 
+def build_middle_label_map(cluster_centroids):
+    label_map = {i: 'Standard Middle' for i in range(len(cluster_centroids))}
+    ball_playing_cluster = int(np.argmax(cluster_centroids[:, 0]))
+    impact_candidates = [i for i in range(len(cluster_centroids)) if i != ball_playing_cluster]
+    impact_clusters = sorted(
+        impact_candidates,
+        key=lambda i: cluster_centroids[i, 1],
+        reverse=True,
+    )[:2]
+
+    label_map[ball_playing_cluster] = 'Ball Playing Middle'
+    for cluster_id in impact_clusters:
+        label_map[cluster_id] = 'Impact Middle'
+    return label_map
+
+
+def apply_archetype_assignment_rules(df, config):
+    if config.name == '2nd Row':
+        low_threat_strike = (
+            (df['cluster_name'] == 'Strike Attacking Edge')
+            & (df['pc2'] < EDGE_STRIKE_MIN_ATTACKING_THREAT)
+            & (df['pc3'] < EDGE_SUPPORT_MAX_DEFENSIVE_WORKRATE)
+        )
+        df.loc[low_threat_strike, 'cluster_name'] = 'Support Edge'
+
+    if config.name == 'Middle':
+        low_running_impact = (
+            (df['cluster_name'] == 'Impact Middle')
+            & (df['pc2'] < MIDDLE_IMPACT_MIN_BALL_RUNNING)
+        )
+        df.loc[low_running_impact, 'cluster_name'] = 'Standard Middle'
+
+    return df
+
+
 POSITION_CONFIGS = [
     PositionConfig(
         name='Fullback',
         features1=['line_break_assists_per_80', 'try_assists_per_80', 'passes_per_80'],
         features2=['line_breaks_per_80', 'tries_per_80', 'tackle_breaks_per_80'],
-        features3=['all_run_metres_per_80', 'hit_ups_per_80', 'post_contact_metres_per_80'],
+        features3=['all_run_metres_per_80', 'post_contact_metres_per_80', 'all_runs_per_80'],
         pc_names=['Playmaking', 'Evasiveness', 'Workrate'],
         n_clusters=5,
         labels=['Ball Running Fullback', 'Balanced Fullback', 'Workhorse Fullback', 'Playmaker Fullback', 'Support Fullback'],
@@ -100,13 +143,14 @@ POSITION_CONFIGS = [
             "Players who are less involved in attack, but may specialise in defense or defusing kicks."
         ],
         min_games=5,
-        profiles=PROFILES_FULLBACK
+        profiles=PROFILES_FULLBACK,
+        assign_to_profiles=True,
     ),
     PositionConfig(
         name='Winger',
-        features1=['tackle_breaks_per_80', 'offloads_per_80'],
+        features1=['tackle_breaks_per_80', 'offloads_per_80', 'post_contact_metres_per_80'],
         features2=['tries_per_80','line_breaks_per_80'],
-        features3=['all_run_metres_per_80'],
+        features3=['all_run_metres_per_80', 'all_runs_per_80'],
         pc_names=['Strength In Contact', 'Try Scoring', 'Workrate'],
         n_clusters=3,
         labels=['Support Winger', 'Finisher Winger', 'Workhorse Winger'],
@@ -116,13 +160,14 @@ POSITION_CONFIGS = [
             "High involvement wingers who are strong in contact, often taking carries out of their own end."
         ],
         min_games=5,
-        profiles=PROFILES_WINGER
+        profiles=PROFILES_WINGER,
+        assign_to_profiles=True,
     ),
     PositionConfig(
         name='Centre',
-        features1=['passes_per_80', 'pass_run_ratio'],
+        features1=['passes_per_80', 'pass_run_ratio', 'line_break_assists_per_80', 'try_assists_per_80'],
         features2=['tries_per_80','line_breaks_per_80'],
-        features3=['all_run_metres_per_80', 'tackle_breaks_per_80', 'hit_ups_per_80'],
+        features3=['all_run_metres_per_80', 'tackle_breaks_per_80', 'all_runs_per_80'],
         pc_names=['Passing', 'Try Scoring', 'Workrate'],
         n_clusters=4,
         labels=['Link Centre', 'Workhorse Centre', 'Support Centre', 'Strike Centre'],
@@ -133,7 +178,8 @@ POSITION_CONFIGS = [
             "Centres who are heavily involved in try scoring, and may look to set up those around them rather than taking tough carries."
         ],
         min_games=5,
-        profiles=PROFILES_CENTRE
+        profiles=PROFILES_CENTRE,
+        assign_to_profiles=True,
     ),
     PositionConfig(
         name='Half',
@@ -154,7 +200,7 @@ POSITION_CONFIGS = [
     PositionConfig(
         name='Hooker',
         features1=['all_run_metres', 'tackle_breaks', 'line_breaks'],
-        features2=['try_assists', 'line_break_assists'],
+        features2=['try_assists', 'line_break_assists', 'forty_twenty', 'forced_drop_outs'],
         features3=['passes_to_run_ratio'],
         pc_names=['Ball Running', 'Creativity', 'Pass - Run Ratio'],
         n_clusters=4,
@@ -165,8 +211,9 @@ POSITION_CONFIGS = [
             "Hookers that look to pass rather than run, usually having strong ball playing.",
             "Creative types who specialise in finding the right pass for their forwards."
         ],
-        min_games=7,
-        profiles=PROFILES_HOOKER
+        min_games=5,
+        profiles=PROFILES_HOOKER,
+        assign_to_profiles=True,
     ),
     PositionConfig(
         name='2nd Row', # Mapped to 'Edge' in output
@@ -182,7 +229,7 @@ POSITION_CONFIGS = [
             "These players are strong in contact and are relied upon to make metres for their team, often involved in tries as a result.",
             "Great line runners, often breaking the line and scoring tries, playing like a centre in attack."
         ],
-        min_games=7,
+        min_games=5,
         profiles=PROFILES_EDGE
     ),
     PositionConfig(
@@ -191,23 +238,128 @@ POSITION_CONFIGS = [
         features2=['all_run_metres', 'tackle_breaks', 'post_contact_metres', 'offloads'],
         features3=['tackles_made', 'tackle_efficiency'],
         pc_names=['Ball Playing', 'Ball Running', 'Defense'],
-        n_clusters=3,
+        n_clusters=5,
         labels=['Ball Playing Middle', 'Impact Middle', 'Standard Middle'],
         descriptions=[
             "These middles often play in the lock position with strong ball playing skills, directing players in the middle of the park.",
-            "The most effective hit up takers, these middles are characterised by their strength and big engines.",
+            "The most effective ball runners, these middles are characterised by strong carries, tackle breaks and post-contact metres.",
             "Making up the rest of the middle, these players share the hit up and tackling duties."
         ],
-        min_games=7,
+        min_games=5,
         profiles=PROFILES_MIDDLE
     )
 ]
 
 # --- Data Loading & Preprocessing ---
 
-def load_and_process_data():
-    print("Fetching player stats...")
-    player_data = f.fetch_all("player_stats")
+BASE_PLAYER_COLUMNS = {
+    'player',
+    'team',
+    'match_date',
+    'mins_played',
+    'number',
+    'position',
+    'all_runs',
+    'passes_to_run_ratio',
+    'tackle_efficiency',
+}
+
+RATIO_FEATURES = {'pass_run_ratio', 'passes_to_run_ratio', 'tackle_efficiency'}
+
+
+def _base_stat_name(feature):
+    if feature.endswith('_per_80'):
+        return feature[:-7]
+    if feature.endswith('_team_share'):
+        return feature[:-11]
+    if feature == 'pass_run_ratio':
+        return 'passes_to_run_ratio'
+    return feature
+
+
+def _team_share_feature_name(feature):
+    if feature in RATIO_FEATURES:
+        return feature
+    return f"{_base_stat_name(feature)}_team_share"
+
+
+def build_team_share_configs(configs):
+    share_configs = []
+    for config in configs:
+        share_configs.append(PositionConfig(
+            name=config.name,
+            features1=[_team_share_feature_name(feature) for feature in config.features1],
+            features2=[_team_share_feature_name(feature) for feature in config.features2],
+            features3=[_team_share_feature_name(feature) for feature in config.features3],
+            pc_names=config.pc_names,
+            n_clusters=config.n_clusters,
+            labels=config.labels,
+            descriptions=config.descriptions,
+            min_games=config.min_games,
+            profiles=config.profiles,
+            assign_to_profiles=config.assign_to_profiles,
+        ))
+    return share_configs
+
+
+def _player_stat_columns(configs):
+    columns = set(BASE_PLAYER_COLUMNS)
+    for config in configs:
+        for feature in config.features1 + config.features2 + config.features3:
+            columns.add(_base_stat_name(feature))
+    return sorted(columns)
+
+
+def fetch_player_stats_for_years(years, configs, batch=500):
+    columns = _player_stat_columns(configs)
+    cache_dir = os.getenv("ARCHETYPE_PLAYER_STATS_CACHE_DIR")
+    if cache_dir:
+        frames = []
+        for cache_file in sorted(Path(cache_dir).glob("player_stats_*.json")):
+            with cache_file.open() as f:
+                data = json.load(f)
+            if data:
+                frames.append(pd.DataFrame(data))
+        if not frames:
+            return pd.DataFrame(columns=columns)
+        return pd.concat(frames, ignore_index=True)
+
+    select_cols = ','.join(columns)
+    frames = []
+
+    for year in sorted(set(years)):
+        start_date = f"{year}-01-01"
+        end_date = f"{year + 1}-01-01"
+        offset = 0
+
+        while True:
+            response = (
+                supabase
+                .schema("nrl")
+                .table("player_stats")
+                .select(select_cols)
+                .gte("match_date", start_date)
+                .lt("match_date", end_date)
+                .gte("mins_played", 40)
+                .order("match_date")
+                .range(offset, offset + batch - 1)
+                .execute()
+            )
+            data = response.data or []
+            if not data:
+                break
+
+            frames.append(pd.DataFrame(data))
+            offset += batch
+
+    if not frames:
+        return pd.DataFrame(columns=columns)
+
+    return pd.concat(frames, ignore_index=True)
+
+
+def load_and_process_data(configs, player_data, stat_mode='production', recent_games=None):
+    print(f"Processing {stat_mode.replace('_', ' ')} player stats...")
     
     # Filter for relevant years
     start_date = f"{min(YEARS_TO_PROCESS)}-01-01"
@@ -221,6 +373,36 @@ def load_and_process_data():
     
     # Extract year
     player_df['year'] = pd.to_datetime(player_df['match_date']).dt.year
+    player_df['player'] = player_df['player'].replace(PLAYER_NAME_ALIASES)
+    player_df = player_df.drop_duplicates().copy()
+
+    # Prefer the recorded position; retain number as a fallback for legacy rows.
+    player_df['position'] = player_df.apply(
+        lambda row: f.map_position(row.get('position'), row.get('number')),
+        axis=1,
+    )
+
+    if stat_mode == 'team_share':
+        required_stats = sorted({
+            _base_stat_name(feature)
+            for config in POSITION_CONFIGS
+            for feature in config.features1 + config.features2 + config.features3
+            if _team_share_feature_name(feature) != feature
+        })
+        group_keys = ['match_date', 'team']
+        team_totals = player_df.groupby(group_keys, dropna=False)[required_stats].transform('sum')
+        for stat in required_stats:
+            denominator = team_totals[stat].replace(0, np.nan)
+            player_df[f'{stat}_team_share'] = (player_df[stat] / denominator * 100).fillna(0)
+
+    if recent_games:
+        player_df = (
+            player_df
+            .sort_values('match_date')
+            .groupby(['player', 'year', 'position'], group_keys=False)
+            .tail(recent_games)
+            .copy()
+        )
     
     # Calculate per_80 stats
     num_cols = player_df.select_dtypes('number').columns
@@ -230,20 +412,18 @@ def load_and_process_data():
             
     per_80_cols = [c for c in player_df.columns if c.endswith('_per_80')]
     
-    # Map positions
-    player_df['position'] = player_df['number'].apply(f.map_position)
-    
     # Other features
     player_df['metres_per_run'] = player_df['all_run_metres'] / player_df['all_runs']
     
-    # Aggregate per player per year
+    # Aggregate per player, year and position so each archetype only reflects
+    # games actually played at that mapped position.
     # We need to support both 'per_80' (mean of per_80) and 'raw' (mean of per match)
     # The original code used 'player_agg' (per_80) and 'player_agg_unadjusted' (raw + per_80)
     # We will create one super-aggregated dataframe with ALL columns
     
     agg_dict = {
         'games': ('match_date', 'nunique'),
-        'position': ('position', lambda s: s.mode().iloc[0] if not s.mode().empty else s.iloc[0]),
+        'total_minutes': ('mins_played', 'sum'),
         'pass_run_ratio': ('passes_to_run_ratio', 'mean'),
         'tackle_efficiency': ('tackle_efficiency', 'mean'),
     }
@@ -259,18 +439,15 @@ def load_and_process_data():
         
     training_agg = (
         player_df
-        .groupby(['player', 'year'], as_index=False) # Group by Player AND Year
+        .groupby(['player', 'year', 'position'], as_index=False)
         .agg(**agg_dict)
     )
-    
-    # Fix position if it was lost or weird (it's aggregated by mode)
-    # Also we need to filter by position later, so ensure it's there.
     
     return training_agg
 
 # --- Model Training ---
 
-def train_models(training_agg, configs):
+def train_models(training_agg, configs, game_window=None):
     models = {}
     
     print("\n====== TRAINING MODELS (GLOBAL) ======")
@@ -280,7 +457,8 @@ def train_models(training_agg, configs):
         
         # Filter data
         df = training_agg[training_agg['position'] == config.name].copy()
-        df = df[df['games'] >= config.min_games]
+        minimum_games = min(config.min_games, game_window) if game_window else config.min_games
+        df = df[df['games'] >= minimum_games]
         
         # Special exclusion for 2nd Row
         if config.name == '2nd Row':
@@ -318,16 +496,30 @@ def train_models(training_agg, configs):
                 'features': features
             }
             
-        # 4. Determine Label Mapping (Dynamic Assignment)
-        # We need to predict clusters for the training data to get centroids
-        df['cluster'] = kmeans.predict(X_scaled)
-        
-        # Calculate centroids in PC space (using the global PCAs)
+        # 4. Calculate the training rows in the visible PC space.
         for pc_key, pc_data in pcas.items():
             X_sub = df[pc_data['features']].fillna(0)
             X_sub_scaled = pc_data['scaler'].transform(X_sub)
             df[pc_key] = pc_data['model'].transform(X_sub_scaled)
-            
+
+        profile_scaler = None
+        profile_matrix = None
+        profile_labels = None
+        if config.assign_to_profiles:
+            active_profiles = {k: v for k, v in config.profiles.items() if k in config.labels}
+            profile_labels = list(active_profiles.keys())
+            profile_matrix = np.array(list(active_profiles.values()))
+            if len(profile_labels) != config.n_clusters:
+                raise ValueError(f"{config.name} requires one profile per cluster")
+
+            profile_scaler = StandardScaler()
+            pc_values = df[['pc1', 'pc2', 'pc3']].to_numpy()
+            pc_values_scaled = profile_scaler.fit_transform(pc_values)
+            df['cluster'] = cdist(pc_values_scaled, profile_matrix, metric='euclidean').argmin(axis=1)
+        else:
+            df['cluster'] = kmeans.predict(X_scaled)
+
+        # Calculate centroids in PC space for reporting and label matching.
         cluster_centroids = []
         for i in range(config.n_clusters):
             cluster_data = df[df['cluster'] == i]
@@ -342,7 +534,17 @@ def train_models(training_agg, configs):
         # Match with profiles
         label_map = {} # Cluster ID -> Label Name
         
-        if config.profiles:
+        if config.assign_to_profiles:
+            label_map = {i: label for i, label in enumerate(profile_labels)}
+            print("  Label Mapping:")
+            for cid, label in label_map.items():
+                print(f"    Profile {cid} -> {label}")
+        elif config.name == 'Middle':
+            label_map = build_middle_label_map(cluster_centroids)
+            print("  Label Mapping:")
+            for cid, label in label_map.items():
+                print(f"    Cluster {cid} -> {label}")
+        elif config.profiles:
             # Filter profiles to only those in labels list
             active_profiles = {k: v for k, v in config.profiles.items() if k in config.labels}
             profile_labels = list(active_profiles.keys())
@@ -374,15 +576,127 @@ def train_models(training_agg, configs):
             'kmeans': kmeans,
             'pcas': pcas,
             'label_map': label_map,
-            'centroids': cluster_centroids
+            'centroids': cluster_centroids,
+            'assignment': 'profiles' if config.assign_to_profiles else 'kmeans',
+            'profile_scaler': profile_scaler,
+            'profile_matrix': profile_matrix,
         }
         
     return models
 
 # --- Generation ---
 
-def generate_outputs(training_agg, models, configs):
+def export_position_name(config):
+    return 'Edge' if config.name == '2nd Row' else config.name
+
+
+def json_number(value, digits=None):
+    if value is None or pd.isna(value):
+        return None
+
+    if isinstance(value, (np.integer,)):
+        return int(value)
+
+    if isinstance(value, (np.floating, float)):
+        value = float(value)
+        if not np.isfinite(value):
+            return None
+        return round(value, digits) if digits is not None else value
+
+    if isinstance(value, (int,)):
+        return int(value)
+
+    return value
+
+
+def build_stat_map(row, features, suffix="", digits=3):
+    out = {}
+    for feature in features:
+        key = f"{feature}{suffix}"
+        value = json_number(row.get(key), digits)
+        if value is not None:
+            out[feature] = value
+    return out
+
+
+def build_player_archetype_record(row, config, features):
+    return {
+        "player": str(row["player"]),
+        "year": int(row["year"]),
+        "position": export_position_name(config),
+        "source_position": config.name,
+        "archetype": str(row["cluster_name"]),
+        "cluster_id": int(row["cluster"]),
+        "games": int(row["games"]),
+        "minutes": json_number(row.get("mins_played"), 2),
+        "total_minutes": json_number(row.get("total_minutes"), 2),
+        "pc1": json_number(row.get("pc1"), 4),
+        "pc2": json_number(row.get("pc2"), 4),
+        "pc3": json_number(row.get("pc3"), 4),
+        "pc1_name": config.pc_names[0],
+        "pc2_name": config.pc_names[1],
+        "pc3_name": config.pc_names[2],
+        "centroid_distance": json_number(row.get("centroid_distance"), 4),
+        "second_centroid_distance": json_number(row.get("second_centroid_distance"), 4),
+        "confidence": json_number(row.get("confidence"), 4),
+        "key_stats": build_stat_map(row, features),
+        "key_stat_percentiles": build_stat_map(row, features, suffix="_percentile", digits=2),
+    }
+
+
+def upsert_player_archetypes(records):
+    if not records:
+        print("\nNo player archetype rows to upsert.")
+        return
+
+    print(f"\nUpserting {len(records)} rows to nrl.{ARCHETYPE_TABLE}...")
+    for start in range(0, len(records), UPSERT_BATCH_SIZE):
+        batch = records[start:start + UPSERT_BATCH_SIZE]
+        (
+            supabase
+            .schema("nrl")
+            .table(ARCHETYPE_TABLE)
+            .upsert(batch, on_conflict="player,year,position")
+            .execute()
+        )
+
+    removed_below_minimum = 0
+    for config in POSITION_CONFIGS:
+        response = (
+            supabase
+            .schema("nrl")
+            .table(ARCHETYPE_TABLE)
+            .delete()
+            .eq("position", export_position_name(config))
+            .in_("year", YEARS_TO_PROCESS)
+            .lt("games", config.min_games)
+            .execute()
+        )
+        removed_below_minimum += len(response.data or [])
+    if removed_below_minimum:
+        print(f"Removed {removed_below_minimum} archetype rows below their position minimum.")
+
+    canonical_players = {record["player"] for record in records}
+    stale_aliases = [
+        alias
+        for alias, canonical in PLAYER_NAME_ALIASES.items()
+        if canonical in canonical_players
+    ]
+    if stale_aliases:
+        (
+            supabase
+            .schema("nrl")
+            .table(ARCHETYPE_TABLE)
+            .delete()
+            .in_("player", stale_aliases)
+            .execute()
+        )
+        print(f"Removed stale player aliases: {', '.join(stale_aliases)}.")
+    print(f"Upserted {len(records)} rows to nrl.{ARCHETYPE_TABLE}.")
+
+def generate_outputs(training_agg, models, configs, plot_suffix="", stat_mode="production", game_window=None):
     full_cluster_data_export = {}
+    player_archetype_records = []
     
     # Only process "All" as requested by user
     process_years = ["All"]
@@ -411,7 +725,8 @@ def generate_outputs(training_agg, models, configs):
             
             # Filter data
             df = year_data[year_data['position'] == config.name].copy()
-            df = df[df['games'] >= config.min_games]
+            minimum_games = min(config.min_games, game_window) if game_window else config.min_games
+            df = df[df['games'] >= minimum_games]
             
             if config.name == '2nd Row':
                 df = df[df['player'] != 'Chris Randall']
@@ -420,28 +735,59 @@ def generate_outputs(training_agg, models, configs):
                 print(f"  No players for {config.name} in {year}")
                 continue
                 
-            # Transform Features
+            # Transform features and calculate the visible PC coordinates first.
             all_features = list(set(config.features1 + config.features2 + config.features3))
             X = df[all_features].fillna(0)
             X_scaled = model_data['scaler'].transform(X)
-            
-            # Predict Clusters
-            df['cluster'] = model_data['kmeans'].predict(X_scaled)
-            
-            # Map Labels
-            df['cluster_name'] = df['cluster'].map(model_data['label_map'])
-            
-            # Calculate PCs
+
             for pc_key, pc_info in model_data['pcas'].items():
                 X_sub = df[pc_info['features']].fillna(0)
                 X_sub_scaled = pc_info['scaler'].transform(X_sub)
                 df[pc_key] = pc_info['model'].transform(X_sub_scaled)
+
+            if model_data['assignment'] == 'profiles':
+                pc_values = df[['pc1', 'pc2', 'pc3']].to_numpy()
+                pc_values_scaled = model_data['profile_scaler'].transform(pc_values)
+                distances = cdist(pc_values_scaled, model_data['profile_matrix'], metric='euclidean')
+                df['cluster'] = distances.argmin(axis=1)
+            else:
+                df['cluster'] = model_data['kmeans'].predict(X_scaled)
+                distances = model_data['kmeans'].transform(X_scaled)
+
+            assigned_clusters = df['cluster'].to_numpy(dtype=int)
+            nearest_distances = distances[np.arange(len(df)), assigned_clusters]
+            second_distances = np.partition(distances, 1, axis=1)[:, 1] if config.n_clusters > 1 else np.full(len(df), np.nan)
+            confidence = np.where(
+                second_distances > 0,
+                np.clip((second_distances - nearest_distances) / second_distances, 0, 1),
+                1,
+            )
+
+            df['centroid_distance'] = nearest_distances
+            df['second_centroid_distance'] = second_distances
+            df['confidence'] = confidence
+
+            # Map Labels
+            df['cluster_name'] = df['cluster'].map(model_data['label_map'])
+            df = apply_archetype_assignment_rules(df, config)
+
+            percentile_features = sorted(all_features)
+            percentile_df = df.groupby('year')[percentile_features].rank(pct=True, method='average') * 100
+            for feature in percentile_features:
+                df[f'{feature}_percentile'] = percentile_df[feature]
+
+            if year == "All":
+                player_archetype_records.extend(
+                    build_player_archetype_record(row, config, percentile_features)
+                    for _, row in df.iterrows()
+                )
                 
             # Prepare Export Data
             # Use 'Edge' instead of '2nd Row' for export key if needed, but config name is used
-            export_name = 'Edge' if config.name == '2nd Row' else config.name
+            export_name = export_position_name(config)
             
             position_data = {
+                "stat_mode": stat_mode,
                 "archetypes": [],
                 "pc_axes": {
                     "pc1": {"name": config.pc_names[0], "features": config.features1},
@@ -589,12 +935,56 @@ def generate_outputs(training_agg, models, configs):
                 font=dict(color="#0A1128")
             )
             
-            filename = f"nrl_cluster_plot_{export_name.lower().replace(' ', '_')}_{str(year).lower()}.html"
+            suffix = f"_{plot_suffix}" if plot_suffix else ""
+            filename = f"nrl_cluster_plot_{export_name.lower().replace(' ', '_')}{suffix}_{str(year).lower()}.html"
             
-            # Inject custom CSS and JS to fix Plotly button styling and add mobile responsiveness
+            # Inject custom CSS and JS to fix Plotly button styling, add mobile responsiveness,
+            # and allow projecting the 3D archetype space onto any 2D plane.
             custom_head = """
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             <style>
+                body {
+                    margin: 0;
+                }
+                #plotly-wrapper {
+                    position: relative;
+                }
+                #dimension-toggle {
+                    position: absolute;
+                    top: 44px;
+                    left: 10px;
+                    z-index: 20;
+                    display: flex;
+                    gap: 4px;
+                    flex-wrap: nowrap;
+                    max-width: calc(100% - 90px);
+                    padding: 3px;
+                    background: rgba(10, 17, 40, 0.74);
+                    border: 1px solid rgba(248, 250, 252, 0.24);
+                    border-radius: 6px;
+                    box-shadow: 0 2px 8px rgba(10, 17, 40, 0.22);
+                }
+                .dimension-toggle-btn {
+                    appearance: none;
+                    border: 1px solid rgba(248, 250, 252, 0.34);
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.92);
+                    color: #f8fafc;
+                    cursor: pointer;
+                    font: 700 9px/1.1 "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                    padding: 3px 6px;
+                    white-space: nowrap;
+                }
+                .dimension-toggle-btn:hover,
+                .dimension-toggle-btn:focus-visible {
+                    border-color: #C9FF00;
+                    outline: none;
+                }
+                .dimension-toggle-btn.is-dropped {
+                    background: rgba(201, 255, 0, 0.14);
+                    border-color: #C9FF00;
+                    color: #ffffff;
+                }
                 #plotly-wrapper .updatemenu-button rect.updatemenu-item-bg {
                     rx: 8px !important;
                     ry: 8px !important;
@@ -619,9 +1009,27 @@ def generate_outputs(training_agg, models, configs):
                     #plotly-wrapper.ready .updatemenu-container {
                         visibility: visible;
                     }
+                    #dimension-toggle {
+                        top: 48px;
+                        left: 6px;
+                        max-width: calc(100% - 64px);
+                    }
+                    .dimension-toggle-btn {
+                        flex: 1 1 auto;
+                        min-width: 0;
+                        padding: 5px 6px;
+                    }
                 }
             </style>
             <script>
+            const projectionDimensions = [
+                { key: 'pc1', axis: 'x', label: __PC1_NAME__ },
+                { key: 'pc2', axis: 'y', label: __PC2_NAME__ },
+                { key: 'pc3', axis: 'z', label: __PC3_NAME__ }
+            ];
+            let droppedProjectionDimension = null;
+            let originalProjectionData = null;
+
             function applyButtonStyles() {
                 const rects = document.querySelectorAll('.updatemenu-item-bg');
                 const isMobile = window.innerWidth < 768;
@@ -655,6 +1063,162 @@ def generate_outputs(training_agg, models, configs):
                         }
                     }
                 });
+            }
+
+            function readTraceValue(trace, axis) {
+                const value = trace[axis] || [];
+                if (ArrayBuffer.isView(value)) {
+                    return Array.from(value);
+                }
+                return Array.isArray(value) ? [...value] : value;
+            }
+
+            function ensureProjectionData(gd) {
+                if (originalProjectionData) return true;
+                if (!gd || !gd.data || !gd.data.length) return false;
+
+                const firstTrace = gd.data[0];
+                if (!firstTrace || !firstTrace.x || !firstTrace.y || !firstTrace.z) return false;
+
+                originalProjectionData = gd.data.map(trace => ({
+                    x: readTraceValue(trace, 'x'),
+                    y: readTraceValue(trace, 'y'),
+                    z: readTraceValue(trace, 'z')
+                }));
+
+                return true;
+            }
+
+            function getProjectionTrace(trace, index, dimensionsToKeep) {
+                const base = { ...trace };
+                const source = originalProjectionData[index];
+                const firstAxis = dimensionsToKeep[0].axis;
+                const secondAxis = dimensionsToKeep[1].axis;
+
+                delete base.scene;
+                delete base.z;
+                base.type = 'scatter';
+                base.mode = trace.mode || 'markers';
+                base.x = source[firstAxis];
+                base.y = source[secondAxis];
+                base.marker = { ...(trace.marker || {}) };
+
+                return base;
+            }
+
+            function getRestoredTrace(trace, index) {
+                const base = { ...trace };
+                const source = originalProjectionData[index];
+
+                delete base.xaxis;
+                delete base.yaxis;
+                base.type = 'scatter3d';
+                base.mode = trace.mode || 'markers';
+                base.x = source.x;
+                base.y = source.y;
+                base.z = source.z;
+                base.marker = { ...(trace.marker || {}) };
+
+                return base;
+            }
+
+            function getProjectedAxis(label) {
+                return {
+                    title: { text: label, font: { color: "#f8fafc", size: 15 } },
+                    tickfont: { color: "#f8fafc", size: 12 },
+                    showline: false,
+                    mirror: false,
+                    zeroline: true,
+                    zerolinecolor: "rgba(229, 231, 235, 0.82)",
+                    zerolinewidth: 2,
+                    showgrid: true,
+                    gridcolor: "rgba(229, 231, 235, 0.28)",
+                    gridwidth: 1,
+                    ticks: ""
+                };
+            }
+
+            function applyProjection() {
+                const gd = document.querySelector('.plotly-graph-div');
+                if (!gd || !window.Plotly) return;
+
+                if (!ensureProjectionData(gd)) return;
+
+                const dimensionsToKeep = projectionDimensions.filter(dimension => dimension.key !== droppedProjectionDimension);
+                const projectedData = gd.data.map((trace, index) => (
+                    droppedProjectionDimension
+                        ? getProjectionTrace(trace, index, dimensionsToKeep)
+                        : getRestoredTrace(trace, index)
+                ));
+                const baseMargin = gd.layout.margin || {};
+                const layout = {
+                    ...gd.layout,
+                    margin: droppedProjectionDimension
+                        ? { ...baseMargin, t: Math.max(baseMargin.t || 0, 82), r: Math.max(baseMargin.r || 0, 64) }
+                        : { ...baseMargin },
+                    legend: { ...gd.layout.legend },
+                    scene: {
+                        ...(gd.layout.scene || {}),
+                        xaxis: { ...((gd.layout.scene || {}).xaxis || {}), title: { text: projectionDimensions[0].label }, showspikes: false },
+                        yaxis: { ...((gd.layout.scene || {}).yaxis || {}), title: { text: projectionDimensions[1].label }, showspikes: false },
+                        zaxis: { ...((gd.layout.scene || {}).zaxis || {}), title: { text: projectionDimensions[2].label }, showspikes: false },
+                        dragmode: 'turntable'
+                    },
+                    xaxis: droppedProjectionDimension
+                        ? getProjectedAxis(dimensionsToKeep[0].label)
+                        : gd.layout.xaxis,
+                    yaxis: droppedProjectionDimension
+                        ? { ...getProjectedAxis(dimensionsToKeep[1].label), scaleanchor: 'x', scaleratio: 1 }
+                        : gd.layout.yaxis,
+                    dragmode: droppedProjectionDimension ? 'pan' : gd.layout.dragmode
+                };
+
+                Plotly.react(gd, projectedData, layout, {
+                    responsive: true,
+                    scrollZoom: true,
+                    displaylogo: false
+                }).then(() => {
+                    updateProjectionAttributes();
+                    applyButtonStyles();
+                    adjustPlotlyForMobile();
+                });
+            }
+
+            function updateProjectionAttributes() {
+                const wrapper = document.getElementById('plotly-wrapper');
+                if (!wrapper) return;
+
+                wrapper.dataset.projectionMode = droppedProjectionDimension ? '2d' : '3d';
+                wrapper.dataset.droppedDimension = droppedProjectionDimension || '';
+                wrapper.dataset.projectionReady = originalProjectionData ? 'true' : 'false';
+            }
+
+            function renderDimensionToggle() {
+                const wrapper = document.getElementById('plotly-wrapper');
+                const gd = document.querySelector('.plotly-graph-div');
+                if (!wrapper || !gd || wrapper.querySelector('#dimension-toggle')) return;
+
+                if (!ensureProjectionData(gd)) return;
+                updateProjectionAttributes();
+
+                const controls = document.createElement('div');
+                controls.id = 'dimension-toggle';
+                projectionDimensions.forEach(dimension => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'dimension-toggle-btn';
+                    button.textContent = dimension.label;
+                    button.title = `Toggle ${dimension.label} projection`;
+                    button.addEventListener('click', () => {
+                        droppedProjectionDimension = droppedProjectionDimension === dimension.key ? null : dimension.key;
+                        controls.querySelectorAll('.dimension-toggle-btn').forEach(btn => {
+                            btn.classList.toggle('is-dropped', btn === button && droppedProjectionDimension === dimension.key);
+                        });
+                        applyProjection();
+                    });
+                    controls.appendChild(button);
+                });
+                wrapper.appendChild(controls);
             }
 
             function adjustPlotlyForMobile() {
@@ -708,9 +1272,13 @@ def generate_outputs(training_agg, models, configs):
                 const target = document.body;
                 observer.observe(target, { childList: true, subtree: true });
                 applyButtonStyles();
+                renderDimensionToggle();
                 
                 // Initial mobile adjustment - faster timeout
-                setTimeout(adjustPlotlyForMobile, 100);
+                setTimeout(() => {
+                    renderDimensionToggle();
+                    adjustPlotlyForMobile();
+                }, 100);
             });
             
             window.addEventListener('resize', () => {
@@ -719,9 +1287,17 @@ def generate_outputs(training_agg, models, configs):
             });
             
             // Also run on a timer as a fallback
-            setInterval(applyButtonStyles, 1000);
+            setInterval(() => {
+                applyButtonStyles();
+                renderDimensionToggle();
+            }, 1000);
             </script>
             """
+            custom_head = (custom_head
+                .replace('__PC1_NAME__', json.dumps(config.pc_names[0]))
+                .replace('__PC2_NAME__', json.dumps(config.pc_names[1]))
+                .replace('__PC3_NAME__', json.dumps(config.pc_names[2]))
+            )
             
             html_content = fig.to_html(
                 include_plotlyjs='cdn', 
@@ -744,31 +1320,96 @@ def generate_outputs(training_agg, models, configs):
                                '</div>' + 
                                html_content[body_end:])
             
-            with open(filename, 'w') as f:
-                f.write(html_content)
+            with open(filename, 'w') as output_file:
+                output_file.write(html_content)
             print(f"  Saved plot {filename}")
             
         full_cluster_data_export[str(year)] = cluster_data_export
         
-    return full_cluster_data_export
+    return full_cluster_data_export, player_archetype_records
+
+
+def save_cluster_exports(data, file_stem, variable_name):
+    with open(f'{file_stem}.json', 'w') as output_file:
+        json.dump(data, output_file, indent=4)
+    with open(f'{file_stem}.js', 'w') as output_file:
+        output_file.write(f"const {variable_name} = {json.dumps(data, indent=4)};")
+    print(f"Exported {file_stem}.json and {file_stem}.js")
 
 # --- Main Execution ---
 
 if __name__ == "__main__":
     # 1. Load Data
-    training_agg = load_and_process_data()
+    print("Fetching player stats...")
+    player_data = fetch_player_stats_for_years(YEARS_TO_PROCESS, POSITION_CONFIGS)
+    training_agg = load_and_process_data(POSITION_CONFIGS, player_data, stat_mode='production')
     
     # 2. Train Models (Global)
     models = train_models(training_agg, POSITION_CONFIGS)
     
     # 3. Generate Outputs (Per Year)
-    full_data = generate_outputs(training_agg, models, POSITION_CONFIGS)
+    full_data, player_archetype_records = generate_outputs(training_agg, models, POSITION_CONFIGS)
     
-    # 4. Save JSON
-    with open('nrl_cluster_data.json', 'w') as f:
-        json.dump(full_data, f, indent=4)
-    print("\nExported cluster data to nrl_cluster_data.json")
+    # 4. Save JSON and browser data
+    save_cluster_exports(full_data, 'nrl_cluster_data', 'clusterData')
 
-    with open('nrl_cluster_data.js', 'w') as f:
-        f.write(f"const clusterData = {json.dumps(full_data, indent=4)};")
-    print("Exported cluster data to nrl_cluster_data.js")
+    # 5. Upsert player-level archetype outputs
+    if os.getenv("SKIP_ARCHETYPE_UPSERT") == "1":
+        print("Skipped player archetype upsert.")
+    else:
+        upsert_player_archetypes(player_archetype_records)
+
+    # 6. Generate alternate team-share archetype view
+    team_share_configs = build_team_share_configs(POSITION_CONFIGS)
+    team_share_training_agg = load_and_process_data(team_share_configs, player_data, stat_mode='team_share')
+    team_share_models = train_models(team_share_training_agg, team_share_configs)
+    team_share_data, _ = generate_outputs(
+        team_share_training_agg,
+        team_share_models,
+        team_share_configs,
+        plot_suffix="team_share",
+        stat_mode="team_share",
+    )
+    save_cluster_exports(team_share_data, 'nrl_cluster_data_team_share', 'clusterDataTeamShare')
+
+    # 7. Generate recent qualifying-game views.
+    for game_window in (3, 5, 10):
+        window_label = f'l{game_window}'
+        variable_suffix = f'L{game_window}'
+
+        window_training_agg = load_and_process_data(
+            POSITION_CONFIGS,
+            player_data,
+            stat_mode='production',
+            recent_games=game_window,
+        )
+        # Keep the All player-year feature space and cluster centroids fixed.
+        window_data, _ = generate_outputs(
+            window_training_agg,
+            models,
+            POSITION_CONFIGS,
+            plot_suffix=window_label,
+            game_window=game_window,
+        )
+        save_cluster_exports(window_data, f'nrl_cluster_data_{window_label}', f'clusterData{variable_suffix}')
+
+        window_team_share_agg = load_and_process_data(
+            team_share_configs,
+            player_data,
+            stat_mode='team_share',
+            recent_games=game_window,
+        )
+        # Team-share windows likewise reuse the All team-share model.
+        window_team_share_data, _ = generate_outputs(
+            window_team_share_agg,
+            team_share_models,
+            team_share_configs,
+            plot_suffix=f'team_share_{window_label}',
+            stat_mode='team_share',
+            game_window=game_window,
+        )
+        save_cluster_exports(
+            window_team_share_data,
+            f'nrl_cluster_data_team_share_{window_label}',
+            f'clusterDataTeamShare{variable_suffix}',
+        )

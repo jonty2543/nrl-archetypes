@@ -1,36 +1,36 @@
-const clusterData = {
+const clusterDataTeamShareL5 = {
     "All": {
         "Fullback": {
-            "stat_mode": "production",
+            "stat_mode": "team_share",
             "archetypes": [
                 {
                     "id": 0,
                     "name": "Ball Running Fullback",
-                    "count": 14,
+                    "count": 9,
                     "description": "Fullbacks who are quick and able to break the defensive line, and opt for game breaking runs over tough carries."
                 },
                 {
                     "id": 1,
                     "name": "Balanced Fullback",
-                    "count": 18,
+                    "count": 12,
                     "description": "These well rounded fullbacks balance workrate, playmaking and elusiveness making them the complete package."
                 },
                 {
                     "id": 2,
                     "name": "Workhorse Fullback",
-                    "count": 19,
+                    "count": 22,
                     "description": "High-effort players who are always around the ball. They rack up high run metres and support plays."
                 },
                 {
                     "id": 3,
                     "name": "Playmaker Fullback",
-                    "count": 18,
+                    "count": 24,
                     "description": "These playmakers save their energy for the big moments, with reduced workrates but high involvement in tries and try assists."
                 },
                 {
                     "id": 4,
                     "name": "Support Fullback",
-                    "count": 29,
+                    "count": 31,
                     "description": "Players who are less involved in attack, but may specialise in defense or defusing kicks."
                 }
             ],
@@ -38,48 +38,48 @@ const clusterData = {
                 "pc1": {
                     "name": "Playmaking",
                     "features": [
-                        "line_break_assists_per_80",
-                        "try_assists_per_80",
-                        "passes_per_80"
+                        "line_break_assists_team_share",
+                        "try_assists_team_share",
+                        "passes_team_share"
                     ]
                 },
                 "pc2": {
                     "name": "Evasiveness",
                     "features": [
-                        "line_breaks_per_80",
-                        "tries_per_80",
-                        "tackle_breaks_per_80"
+                        "line_breaks_team_share",
+                        "tries_team_share",
+                        "tackle_breaks_team_share"
                     ]
                 },
                 "pc3": {
                     "name": "Workrate",
                     "features": [
-                        "all_run_metres_per_80",
-                        "post_contact_metres_per_80",
-                        "all_runs_per_80"
+                        "all_run_metres_team_share",
+                        "post_contact_metres_team_share",
+                        "all_runs_team_share"
                     ]
                 }
             }
         },
         "Winger": {
-            "stat_mode": "production",
+            "stat_mode": "team_share",
             "archetypes": [
                 {
                     "id": 0,
                     "name": "Support Winger",
-                    "count": 85,
+                    "count": 89,
                     "description": "These wingers tend to be less involved in the game, perhaps due to lack of skill or opportunity."
                 },
                 {
                     "id": 1,
                     "name": "Finisher Winger",
-                    "count": 64,
+                    "count": 62,
                     "description": "Wingers who are specialist try scorers, often with great positional awareness and speed."
                 },
                 {
                     "id": 2,
                     "name": "Workhorse Winger",
-                    "count": 70,
+                    "count": 68,
                     "description": "High involvement wingers who are strong in contact, often taking carries out of their own end."
                 }
             ],
@@ -87,29 +87,29 @@ const clusterData = {
                 "pc1": {
                     "name": "Strength In Contact",
                     "features": [
-                        "tackle_breaks_per_80",
-                        "offloads_per_80",
-                        "post_contact_metres_per_80"
+                        "tackle_breaks_team_share",
+                        "offloads_team_share",
+                        "post_contact_metres_team_share"
                     ]
                 },
                 "pc2": {
                     "name": "Try Scoring",
                     "features": [
-                        "tries_per_80",
-                        "line_breaks_per_80"
+                        "tries_team_share",
+                        "line_breaks_team_share"
                     ]
                 },
                 "pc3": {
                     "name": "Workrate",
                     "features": [
-                        "all_run_metres_per_80",
-                        "all_runs_per_80"
+                        "all_run_metres_team_share",
+                        "all_runs_team_share"
                     ]
                 }
             }
         },
         "Centre": {
-            "stat_mode": "production",
+            "stat_mode": "team_share",
             "archetypes": [
                 {
                     "id": 0,
@@ -120,7 +120,7 @@ const clusterData = {
                 {
                     "id": 1,
                     "name": "Workhorse Centre",
-                    "count": 51,
+                    "count": 46,
                     "description": "Attacking weapons who are heavily involved in gaining metres aswell as breaking the line and scoring tries."
                 },
                 {
@@ -132,7 +132,7 @@ const clusterData = {
                 {
                     "id": 3,
                     "name": "Strike Centre",
-                    "count": 46,
+                    "count": 51,
                     "description": "Centres who are heavily involved in try scoring, and may look to set up those around them rather than taking tough carries."
                 }
             ],
@@ -140,48 +140,48 @@ const clusterData = {
                 "pc1": {
                     "name": "Passing",
                     "features": [
-                        "passes_per_80",
+                        "passes_team_share",
                         "pass_run_ratio",
-                        "line_break_assists_per_80",
-                        "try_assists_per_80"
+                        "line_break_assists_team_share",
+                        "try_assists_team_share"
                     ]
                 },
                 "pc2": {
                     "name": "Try Scoring",
                     "features": [
-                        "tries_per_80",
-                        "line_breaks_per_80"
+                        "tries_team_share",
+                        "line_breaks_team_share"
                     ]
                 },
                 "pc3": {
                     "name": "Workrate",
                     "features": [
-                        "all_run_metres_per_80",
-                        "tackle_breaks_per_80",
-                        "all_runs_per_80"
+                        "all_run_metres_team_share",
+                        "tackle_breaks_team_share",
+                        "all_runs_team_share"
                     ]
                 }
             }
         },
         "Half": {
-            "stat_mode": "production",
+            "stat_mode": "team_share",
             "archetypes": [
                 {
                     "id": 0,
                     "name": "Dominant Half",
-                    "count": 38,
+                    "count": 56,
                     "description": "These players control the attack, and are usually relied upon to set up tries and do most of the kicking."
                 },
                 {
                     "id": 1,
                     "name": "Running Half",
-                    "count": 75,
+                    "count": 56,
                     "description": "Halves with strong running games who look to break the line, usually Five-Eighths."
                 },
                 {
                     "id": 2,
                     "name": "Organising Half",
-                    "count": 87,
+                    "count": 88,
                     "description": "Less dominant halves who may rely on their halves partner to control the attack, focusing on organising their edge."
                 }
             ],
@@ -189,38 +189,38 @@ const clusterData = {
                 "pc1": {
                     "name": "Running",
                     "features": [
-                        "tries_per_80",
-                        "all_run_metres_per_80",
-                        "line_breaks_per_80",
-                        "tackle_breaks_per_80"
+                        "tries_team_share",
+                        "all_run_metres_team_share",
+                        "line_breaks_team_share",
+                        "tackle_breaks_team_share"
                     ]
                 },
                 "pc2": {
                     "name": "Creativity",
                     "features": [
-                        "line_break_assists_per_80",
-                        "try_assists_per_80",
-                        "forced_drop_outs_per_80",
-                        "forty_twenty_per_80"
+                        "line_break_assists_team_share",
+                        "try_assists_team_share",
+                        "forced_drop_outs_team_share",
+                        "forty_twenty_team_share"
                     ]
                 },
                 "pc3": {
                     "name": "Kicking",
                     "features": [
-                        "kicks_per_80",
-                        "kicking_metres_per_80",
-                        "one_point_field_goals_per_80"
+                        "kicks_team_share",
+                        "kicking_metres_team_share",
+                        "one_point_field_goals_team_share"
                     ]
                 }
             }
         },
         "Hooker": {
-            "stat_mode": "production",
+            "stat_mode": "team_share",
             "archetypes": [
                 {
                     "id": 0,
                     "name": "Balanced Hooker",
-                    "count": 36,
+                    "count": 33,
                     "description": "Hookers who balance dummy half runs and creativity."
                 },
                 {
@@ -232,13 +232,13 @@ const clusterData = {
                 {
                     "id": 2,
                     "name": "Link Hooker",
-                    "count": 21,
+                    "count": 22,
                     "description": "Hookers that look to pass rather than run, usually having strong ball playing."
                 },
                 {
                     "id": 3,
                     "name": "Crafty Hooker",
-                    "count": 17,
+                    "count": 19,
                     "description": "Creative types who specialise in finding the right pass for their forwards."
                 }
             ],
@@ -246,18 +246,18 @@ const clusterData = {
                 "pc1": {
                     "name": "Ball Running",
                     "features": [
-                        "all_run_metres",
-                        "tackle_breaks",
-                        "line_breaks"
+                        "all_run_metres_team_share",
+                        "tackle_breaks_team_share",
+                        "line_breaks_team_share"
                     ]
                 },
                 "pc2": {
                     "name": "Creativity",
                     "features": [
-                        "try_assists",
-                        "line_break_assists",
-                        "forty_twenty",
-                        "forced_drop_outs"
+                        "try_assists_team_share",
+                        "line_break_assists_team_share",
+                        "forty_twenty_team_share",
+                        "forced_drop_outs_team_share"
                     ]
                 },
                 "pc3": {
@@ -269,30 +269,30 @@ const clusterData = {
             }
         },
         "Edge": {
-            "stat_mode": "production",
+            "stat_mode": "team_share",
             "archetypes": [
                 {
                     "id": 0,
                     "name": "Defensive Enforcer Edge",
-                    "count": 57,
+                    "count": 61,
                     "description": "Defensive specialists who are key in protecting their edge. Less involved in attacking situations."
                 },
                 {
                     "id": 1,
                     "name": "Support Edge",
-                    "count": 65,
+                    "count": 68,
                     "description": "These edges are less involved in attack and defense, and may specialise in other areas."
                 },
                 {
                     "id": 2,
                     "name": "Strong Attacking Edge",
-                    "count": 39,
+                    "count": 42,
                     "description": "These players are strong in contact and are relied upon to make metres for their team, often involved in tries as a result."
                 },
                 {
                     "id": 3,
                     "name": "Strike Attacking Edge",
-                    "count": 55,
+                    "count": 45,
                     "description": "Great line runners, often breaking the line and scoring tries, playing like a centre in attack."
                 }
             ],
@@ -300,47 +300,47 @@ const clusterData = {
                 "pc1": {
                     "name": "Attacking Workrate",
                     "features": [
-                        "all_run_metres",
-                        "tackle_breaks",
-                        "offloads",
-                        "hit_ups"
+                        "all_run_metres_team_share",
+                        "tackle_breaks_team_share",
+                        "offloads_team_share",
+                        "hit_ups_team_share"
                     ]
                 },
                 "pc2": {
                     "name": "Attacking Threat",
                     "features": [
-                        "line_breaks",
-                        "tries"
+                        "line_breaks_team_share",
+                        "tries_team_share"
                     ]
                 },
                 "pc3": {
                     "name": "Defensive Workrate",
                     "features": [
-                        "tackles_made",
+                        "tackles_made_team_share",
                         "tackle_efficiency"
                     ]
                 }
             }
         },
         "Middle": {
-            "stat_mode": "production",
+            "stat_mode": "team_share",
             "archetypes": [
                 {
                     "id": 0,
                     "name": "Ball Playing Middle",
-                    "count": 31,
+                    "count": 27,
                     "description": "These middles often play in the lock position with strong ball playing skills, directing players in the middle of the park."
                 },
                 {
                     "id": 1,
                     "name": "Impact Middle",
-                    "count": 58,
+                    "count": 63,
                     "description": "The most effective ball runners, these middles are characterised by strong carries, tackle breaks and post-contact metres."
                 },
                 {
                     "id": 2,
                     "name": "Standard Middle",
-                    "count": 177,
+                    "count": 176,
                     "description": "Making up the rest of the middle, these players share the hit up and tackling duties."
                 }
             ],
@@ -349,24 +349,24 @@ const clusterData = {
                     "name": "Ball Playing",
                     "features": [
                         "passes_to_run_ratio",
-                        "passes",
-                        "line_break_assists",
-                        "try_assists"
+                        "passes_team_share",
+                        "line_break_assists_team_share",
+                        "try_assists_team_share"
                     ]
                 },
                 "pc2": {
                     "name": "Ball Running",
                     "features": [
-                        "all_run_metres",
-                        "tackle_breaks",
-                        "post_contact_metres",
-                        "offloads"
+                        "all_run_metres_team_share",
+                        "tackle_breaks_team_share",
+                        "post_contact_metres_team_share",
+                        "offloads_team_share"
                     ]
                 },
                 "pc3": {
                     "name": "Defense",
                     "features": [
-                        "tackles_made",
+                        "tackles_made_team_share",
                         "tackle_efficiency"
                     ]
                 }

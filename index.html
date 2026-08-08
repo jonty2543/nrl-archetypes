@@ -101,6 +101,94 @@
             flex-wrap: wrap;
         }
 
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .controls-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .controls-row .control-frame,
+        .controls-row .tabs {
+            flex: 0 0 auto;
+            margin-bottom: 0;
+        }
+
+        .controls-row .tabs {
+            flex-wrap: nowrap;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .control-frame {
+            display: inline-flex;
+            width: fit-content;
+            max-width: 100%;
+            align-items: center;
+            gap: 0.35rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: rgba(17, 24, 50, 0.72);
+            padding: 0.25rem;
+        }
+
+        .control-frame .mode-toggle {
+            flex-wrap: nowrap;
+            gap: 0.2rem;
+        }
+
+        .control-frame .mode-btn {
+            border-color: transparent;
+            white-space: nowrap;
+        }
+
+        .control-divider {
+            width: 1px;
+            height: 1.5rem;
+            flex: 0 0 1px;
+            background: var(--border-color);
+        }
+
+        .mode-btn {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--white);
+            padding: 0.45rem 0.75rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .mode-btn:hover {
+            border-color: var(--lime);
+            color: var(--lime);
+        }
+
+        .mode-btn.active {
+            background-color: var(--lime);
+            color: var(--navy);
+            border-color: var(--lime);
+        }
+
+        .mode-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
         .tab-btn {
             background-color: transparent;
             border: 1px solid var(--border-color);
@@ -158,6 +246,12 @@
             gap: 1.5rem;
             overflow-y: auto;
             padding-right: 0.5rem;
+        }
+
+        .archetype-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         .sidebar::-webkit-scrollbar {
@@ -229,6 +323,142 @@
             height: 6px;
             background-color: var(--lime);
             border-radius: 50%;
+        }
+
+        .rankings-card {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .rankings-header {
+            width: 100%;
+            appearance: none;
+            border: none;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--lime);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-align: left;
+            text-transform: uppercase;
+        }
+
+        .rankings-header:hover {
+            background: rgba(201, 255, 0, 0.08);
+        }
+
+        .rankings-icon {
+            transition: transform 0.2s ease;
+        }
+
+        .rankings-card.active .rankings-icon {
+            transform: rotate(180deg);
+        }
+
+        .rankings-content {
+            display: none;
+            padding: 1rem 1.5rem 1.5rem;
+        }
+
+        .rankings-card.active .rankings-content {
+            display: block;
+        }
+
+        .rankings-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .rankings-label {
+            color: #8A9bb8;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .rankings-year-select {
+            appearance: none;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: var(--gray);
+            color: var(--white);
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 0.45rem 1.8rem 0.45rem 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .ranking-dimension {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 0.9rem;
+            margin-top: 0.9rem;
+        }
+
+        .ranking-dimension:first-child {
+            border-top: none;
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .ranking-title {
+            color: var(--lime);
+            font-size: 0.95rem;
+            font-weight: 800;
+            margin-bottom: 0.55rem;
+        }
+
+        .ranking-list {
+            list-style: none;
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .ranking-row {
+            display: grid;
+            grid-template-columns: 1.35rem minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 0.6rem;
+            color: #d0d0d0;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .ranking-rank,
+        .ranking-score {
+            color: #8A9bb8;
+            font-size: 0.72rem;
+            font-weight: 800;
+        }
+
+        .ranking-player {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ranking-year {
+            color: #8A9bb8;
+            font-size: 0.68rem;
+            font-weight: 800;
+        }
+
+        .rankings-empty {
+            color: #8A9bb8;
+            font-size: 0.8rem;
+            font-weight: 700;
+            line-height: 1.45;
         }
 
         /* ML Explanation Dropdown */
@@ -342,6 +572,16 @@
                 padding: 0.75rem;
             }
 
+            .controls-row {
+                flex-direction: column;
+                align-items: flex-start;
+                overflow-x: visible;
+            }
+
+            .controls-row .tabs {
+                flex-wrap: wrap;
+            }
+
             .tab-btn {
                 padding: 0.5rem 0.75rem;
                 font-size: 0.85rem;
@@ -420,8 +660,24 @@
             </div>
         </div>
 
-        <div class="tabs" id="positionTabs">
-            <!-- Tabs generated by JS -->
+        <div class="controls-row">
+            <div class="control-frame">
+                <div class="mode-toggle" id="modeToggle">
+                    <button class="mode-btn active" data-mode="production">Production</button>
+                    <button class="mode-btn" data-mode="teamShare">Team Share</button>
+                </div>
+                <span class="control-divider" aria-hidden="true"></span>
+                <div class="mode-toggle" id="windowToggle" aria-label="Qualifying game window">
+                    <button class="mode-btn active" data-window="all">All</button>
+                    <button class="mode-btn" data-window="l3">L3</button>
+                    <button class="mode-btn" data-window="l5">L5</button>
+                    <button class="mode-btn" data-window="l10">L10</button>
+                </div>
+            </div>
+
+            <div class="tabs" id="positionTabs">
+                <!-- Tabs generated by JS -->
+            </div>
         </div>
 
         <div class="content-grid">
@@ -429,23 +685,85 @@
                 <div class="loading">Select a position to view archetypes</div>
             </div>
 
-            <div class="sidebar" id="archetypeList">
-                <!-- Archetype cards generated by JS -->
+            <div class="sidebar" id="archetypeSidebar">
+                <div class="archetype-card rankings-card" id="rankingsCard">
+                    <button class="rankings-header" id="rankingsHeader" type="button" aria-expanded="false">
+                        <span>Show Rankings</span>
+                        <span class="rankings-icon">⌄</span>
+                    </button>
+                    <div class="rankings-content">
+                        <div class="rankings-controls">
+                            <div class="rankings-label">Year</div>
+                            <select class="rankings-year-select" id="rankingsYearSelect" aria-label="Rankings year">
+                                <option value="All">All</option>
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        <div class="rankings-body" id="rankingsBody">
+                            <div class="rankings-empty">Select a position to view rankings.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="archetype-list" id="archetypeList">
+                    <!-- Archetype cards generated by JS -->
+                </div>
             </div>
         </div>
     </div>
 
     <script src="nrl_cluster_data.js"></script>
+    <script src="nrl_cluster_data_team_share.js"></script>
+    <script src="nrl_cluster_data_l3.js"></script>
+    <script src="nrl_cluster_data_l5.js"></script>
+    <script src="nrl_cluster_data_l10.js"></script>
+    <script src="nrl_cluster_data_team_share_l3.js"></script>
+    <script src="nrl_cluster_data_team_share_l5.js"></script>
+    <script src="nrl_cluster_data_team_share_l10.js"></script>
     <script>
 
         // DOM Elements
         const tabsContainer = document.getElementById('positionTabs');
         const plotContainer = document.getElementById('plotContainer');
         const archetypeList = document.getElementById('archetypeList');
+        const modeToggle = document.getElementById('modeToggle');
+        const windowToggle = document.getElementById('windowToggle');
+        const rankingsCard = document.getElementById('rankingsCard');
+        const rankingsHeader = document.getElementById('rankingsHeader');
+        const rankingsYearSelect = document.getElementById('rankingsYearSelect');
 
         // State
         let currentPosition = null;
         let currentYear = 'All';
+        let currentMode = 'production';
+        let currentWindow = 'all';
+        let rankingsOpen = false;
+        let rankingsYear = 'All';
+        let rankingsRequestId = 0;
+        let plotRequestId = 0;
+        const rankingsCache = {};
+        const rankingYearOptions = ['All', '2023', '2024', '2025', '2026'];
+
+        function getActiveClusterData() {
+            if (currentMode === 'teamShare') {
+                if (currentWindow === 'l3' && typeof clusterDataTeamShareL3 !== 'undefined') return clusterDataTeamShareL3;
+                if (currentWindow === 'l5' && typeof clusterDataTeamShareL5 !== 'undefined') return clusterDataTeamShareL5;
+                if (currentWindow === 'l10' && typeof clusterDataTeamShareL10 !== 'undefined') return clusterDataTeamShareL10;
+                return clusterDataTeamShare;
+            }
+            if (currentWindow === 'l3' && typeof clusterDataL3 !== 'undefined') return clusterDataL3;
+            if (currentWindow === 'l5' && typeof clusterDataL5 !== 'undefined') return clusterDataL5;
+            if (currentWindow === 'l10' && typeof clusterDataL10 !== 'undefined') return clusterDataL10;
+            return clusterData;
+        }
+
+        function getPlotSuffix() {
+            const modeSuffix = currentMode === 'teamShare' ? '_team_share' : '';
+            const windowSuffix = currentWindow === 'all' ? '' : `_${currentWindow}`;
+            return `${modeSuffix}${windowSuffix}`;
+        }
 
         // Initialize
         function init() {
@@ -454,8 +772,35 @@
                 console.error("Cluster data not loaded or invalid format");
                 return;
             }
+            const hasTeamShareData = typeof clusterDataTeamShare !== 'undefined' && clusterDataTeamShare[currentYear];
 
-            const positions = Object.keys(clusterData[currentYear]);
+            modeToggle.querySelectorAll('.mode-btn').forEach(btn => {
+                if (btn.dataset.mode === 'teamShare' && !hasTeamShareData) {
+                    btn.disabled = true;
+                    btn.title = 'Team Share data is unavailable';
+                }
+                btn.onclick = () => selectMode(btn.dataset.mode);
+            });
+
+            windowToggle.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.onclick = () => selectWindow(btn.dataset.window);
+            });
+
+            rankingsHeader.onclick = () => {
+                rankingsOpen = !rankingsOpen;
+                if (currentPosition) renderArchetypes(currentPosition);
+            };
+
+            rankingsYearSelect.onchange = (event) => {
+                rankingsYear = event.target.value;
+                if (currentWindow !== 'all' && rankingsYear !== '2026') {
+                    selectWindow('all');
+                    return;
+                }
+                if (currentPosition) renderArchetypes(currentPosition);
+            };
+
+            const positions = Object.keys(getActiveClusterData()[currentYear]);
 
             // Create Tabs
             tabsContainer.innerHTML = '';
@@ -473,10 +818,50 @@
             }
         }
 
+        function selectMode(mode) {
+            if (mode === 'teamShare' && (typeof clusterDataTeamShare === 'undefined' || !clusterDataTeamShare[currentYear])) return;
+            if (currentMode === mode) return;
+            currentMode = mode;
+            rankingsRequestId++;
+
+            modeToggle.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            const activeYearData = getActiveClusterData()[currentYear];
+            const selectedPosition = activeYearData[currentPosition] ? currentPosition : Object.keys(activeYearData)[0];
+            currentPosition = null;
+            selectPosition(selectedPosition);
+        }
+
+        function selectWindow(windowName) {
+            if (currentWindow === windowName) return;
+            currentWindow = windowName;
+            if (windowName !== 'all') {
+                rankingsYear = '2026';
+                rankingsYearSelect.value = rankingsYear;
+            }
+            rankingsRequestId++;
+
+            windowToggle.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.window === windowName);
+            });
+
+            const activeYearData = getActiveClusterData()[currentYear];
+            const selectedPosition = activeYearData[currentPosition] ? currentPosition : Object.keys(activeYearData)[0];
+            currentPosition = null;
+            selectPosition(selectedPosition);
+        }
+
         // Select Position
         function selectPosition(position) {
+            const activeYearData = getActiveClusterData()[currentYear];
+            if (!position || !activeYearData[position]) {
+                position = Object.keys(activeYearData)[0];
+            }
             if (currentPosition === position) return;
             currentPosition = position;
+            rankingsRequestId++;
 
             // Update Tabs
             document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -484,8 +869,26 @@
             });
 
             // Update Plot
-            const plotFile = `nrl_cluster_plot_${position.toLowerCase().replace(' ', '_')}_all.html`;
-            plotContainer.innerHTML = `<iframe src="${plotFile}" title="${position} Clusters"></iframe>`;
+            const plotFile = `nrl_cluster_plot_${position.toLowerCase().replace(' ', '_')}${getPlotSuffix()}_all.html`;
+            const requestId = ++plotRequestId;
+            const nextFrame = document.createElement('iframe');
+            nextFrame.src = plotFile;
+            nextFrame.title = `${position} Clusters`;
+
+            plotContainer.querySelectorAll('iframe:not(.is-ready)').forEach(frame => frame.remove());
+            nextFrame.onload = () => {
+                if (requestId !== plotRequestId) {
+                    nextFrame.remove();
+                    return;
+                }
+
+                nextFrame.onload = null;
+                Array.from(plotContainer.children).forEach(child => {
+                    if (child !== nextFrame) child.remove();
+                });
+                requestAnimationFrame(() => nextFrame.classList.add('is-ready'));
+            };
+            plotContainer.appendChild(nextFrame);
 
             // Update Archetypes
             renderArchetypes(position);
@@ -493,7 +896,7 @@
 
         // Render Archetype Cards
         function renderArchetypes(position) {
-            const data = clusterData[currentYear][position];
+            const data = getActiveClusterData()[currentYear][position];
             archetypeList.innerHTML = '';
 
             // Add PC Axis Info Card (Optional context)
@@ -502,13 +905,28 @@
             contextCard.style.borderLeftColor = '#fff';
 
             // Helper to format features list
-            const formatFeatures = (features) => features.map(f => f.replace(/_per_80/g, '').replace(/_/g, ' ')).join(', ');
+            const formatFeatures = (features) => features.map(f => (
+                f
+                    .replace(/_team_share/g, ' team share %')
+                    .replace(/_per_80/g, '')
+                    .replace(/_/g, ' ')
+            )).join(', ');
+
+            const modeDescription = currentMode === 'teamShare'
+                ? 'Team Share mode uses each player game stat as a percentage of their team total for that same game, then averages those shares by player-season.'
+                : 'Production mode uses the player production stats directly.';
+            const windowDescription = currentWindow === 'all'
+                ? 'All qualifying games in the season are included.'
+                : `Only each player’s latest ${{ l3: 'three', l5: 'five', l10: 'ten' }[currentWindow]} qualifying games from 2026 are included.`;
+
+            updateRankingsCard(position, data);
 
             contextCard.innerHTML = `
                 <div class="archetype-header">
                     <div class="archetype-name" style="color: #fff">Analysis Dimensions</div>
                 </div>
                 <div class="description">
+                    ${modeDescription} ${windowDescription}<br><br>
                     Clusters are defined by 3 key dimensions:
                     <ul class="features-list" style="margin-top: 0.5rem">
                         <li class="feature-item">
@@ -551,6 +969,192 @@
                 `;
                 archetypeList.appendChild(card);
             });
+        }
+
+        function updateRankingsCard(position, data) {
+            rankingsCard.classList.toggle('active', rankingsOpen);
+            rankingsHeader.setAttribute('aria-expanded', rankingsOpen ? 'true' : 'false');
+            rankingsYearSelect.value = rankingsYear;
+            if (rankingsOpen) {
+                void renderDimensionRankings(position, data);
+            }
+        }
+
+        async function renderDimensionRankings(position, data) {
+            const body = document.getElementById('rankingsBody');
+            if (!body) return;
+
+            const requestId = ++rankingsRequestId;
+            body.innerHTML = '<div class="rankings-empty">Loading rankings...</div>';
+
+            try {
+                const rows = await loadRankings(position);
+                if (requestId !== rankingsRequestId) return;
+
+                const filteredRows = rows.filter(row => rankingsYear === 'All' || row.year === rankingsYear);
+                if (!filteredRows.length) {
+                    body.innerHTML = '<div class="rankings-empty">No rankings available for this year.</div>';
+                    return;
+                }
+
+                const dimensions = [
+                    { key: 'x', label: data.pc_axes.pc1.name },
+                    { key: 'y', label: data.pc_axes.pc2.name },
+                    { key: 'z', label: data.pc_axes.pc3.name },
+                ];
+
+                body.innerHTML = dimensions.map(dimension => {
+                    const topRows = [...filteredRows]
+                        .filter(row => Number.isFinite(row[dimension.key]))
+                        .sort((a, b) => b[dimension.key] - a[dimension.key])
+                        .slice(0, 5);
+
+                    if (!topRows.length) {
+                        return `
+                            <div class="ranking-dimension">
+                                <div class="ranking-title">${escapeHtml(dimension.label)}</div>
+                                <div class="rankings-empty">No scores available.</div>
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div class="ranking-dimension">
+                            <div class="ranking-title">${escapeHtml(dimension.label)}</div>
+                            <ol class="ranking-list">
+                                ${topRows.map((row, index) => `
+                                    <li class="ranking-row">
+                                        <span class="ranking-rank">${index + 1}</span>
+                                        <span class="ranking-player" title="${escapeHtml(row.player)}">
+                                            ${escapeHtml(row.player)}
+                                            ${rankingsYear === 'All' ? `<span class="ranking-year"> ${escapeHtml(row.year)}</span>` : ''}
+                                        </span>
+                                        <span class="ranking-score">${row[dimension.key].toFixed(2)}</span>
+                                    </li>
+                                `).join('')}
+                            </ol>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to render rankings:', error);
+                if (requestId === rankingsRequestId) {
+                    body.innerHTML = '<div class="rankings-empty">Rankings could not be loaded.</div>';
+                }
+            }
+        }
+
+        async function loadRankings(position) {
+            const cacheKey = `${currentMode}:${currentWindow}:${position}`;
+            if (rankingsCache[cacheKey]) return rankingsCache[cacheKey];
+
+            const plotFile = `nrl_cluster_plot_${position.toLowerCase().replace(' ', '_')}${getPlotSuffix()}_all.html`;
+            const response = await fetch(plotFile);
+            if (!response.ok) throw new Error(`Failed to fetch ${plotFile}`);
+
+            const html = await response.text();
+            const traces = extractPlotTraces(html);
+            const rows = [];
+
+            traces.forEach(trace => {
+                const x = decodePlotlyArray(trace.x);
+                const y = decodePlotlyArray(trace.y);
+                const z = decodePlotlyArray(trace.z);
+                const hovertext = Array.isArray(trace.hovertext) ? trace.hovertext : [];
+
+                hovertext.forEach((label, index) => {
+                    const parsed = parsePlayerYear(label);
+                    if (!parsed) return;
+                    rows.push({
+                        player: parsed.player,
+                        year: parsed.year,
+                        archetype: trace.name || '',
+                        x: x[index],
+                        y: y[index],
+                        z: z[index],
+                    });
+                });
+            });
+
+            rankingsCache[cacheKey] = rows;
+            return rows;
+        }
+
+        function extractPlotTraces(html) {
+            const marker = 'Plotly.newPlot';
+            const plotStart = html.indexOf(marker);
+            if (plotStart === -1) return [];
+
+            const dataStart = html.indexOf('[', plotStart);
+            if (dataStart === -1) return [];
+
+            let depth = 0;
+            let inString = false;
+            let escaping = false;
+
+            for (let i = dataStart; i < html.length; i++) {
+                const char = html[i];
+                if (inString) {
+                    if (escaping) {
+                        escaping = false;
+                    } else if (char === '\\') {
+                        escaping = true;
+                    } else if (char === '"') {
+                        inString = false;
+                    }
+                    continue;
+                }
+
+                if (char === '"') {
+                    inString = true;
+                } else if (char === '[') {
+                    depth++;
+                } else if (char === ']') {
+                    depth--;
+                    if (depth === 0) {
+                        return JSON.parse(html.slice(dataStart, i + 1));
+                    }
+                }
+            }
+
+            return [];
+        }
+
+        function decodePlotlyArray(value) {
+            if (Array.isArray(value)) return value.map(Number);
+            if (!value || typeof value !== 'object' || !value.bdata) return [];
+
+            const binary = atob(value.bdata);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+
+            const view = new DataView(bytes.buffer);
+            const output = [];
+
+            if (value.dtype === 'f8') {
+                for (let i = 0; i < bytes.length; i += 8) output.push(view.getFloat64(i, true));
+            } else if (value.dtype === 'f4') {
+                for (let i = 0; i < bytes.length; i += 4) output.push(view.getFloat32(i, true));
+            }
+
+            return output;
+        }
+
+        function parsePlayerYear(label) {
+            const match = String(label).match(/^(.*)\s+\((\d{4})\)$/);
+            if (!match) return null;
+            return { player: match[1], year: match[2] };
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function generateDescription(name, axes) {
